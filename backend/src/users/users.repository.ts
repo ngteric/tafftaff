@@ -9,7 +9,15 @@ export type UserResponse = {
   updatedAt: Date;
 };
 
+export type CreateUserData = {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+};
+
 export type UsersRepository = {
   findAll: () => Promise<UserResponse[]>;
   findById: (id: string) => Promise<UserResponse | null>;
+  create: (data: CreateUserData) => Promise<UserResponse>;
 };

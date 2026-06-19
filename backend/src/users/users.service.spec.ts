@@ -7,6 +7,7 @@ describe('UsersService', () => {
   const usersRepository = {
     findAll: jest.fn(),
     findById: jest.fn(),
+    create: jest.fn(),
   };
 
   beforeEach(async () => {

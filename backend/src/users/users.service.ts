@@ -1,6 +1,6 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { USERS_REPOSITORY } from './users.repository';
-import type { UsersRepository } from './users.repository';
+import type { CreateUserData, UsersRepository } from './users.repository';
 
 @Injectable()
 export class UsersService {
@@ -20,5 +20,9 @@ export class UsersService {
     }
 
     return user;
+  }
+
+  create(data: CreateUserData) {
+    return this.repository.create(data);
   }
 }
