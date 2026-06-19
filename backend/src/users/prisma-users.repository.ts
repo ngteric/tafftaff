@@ -4,6 +4,7 @@ import {
   CreateUserData,
   UserResponse,
   UsersRepository,
+  UserWithPassword,
 } from './users.repository';
 
 @Injectable()
@@ -31,6 +32,12 @@ export class PrismaUsersRepository implements UsersRepository {
     return this.prisma.user.findUnique({
       where: { id },
       select: this.userSelect,
+    });
+  }
+
+  findByEmail(email: string): Promise<UserWithPassword | null> {
+    return this.prisma.user.findUnique({
+      where: { email },
     });
   }
 

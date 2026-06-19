@@ -6,6 +6,7 @@ describe('AuthController', () => {
   let controller: AuthController;
   const authService = {
     register: jest.fn(),
+    login: jest.fn(),
   };
 
   beforeEach(async () => {

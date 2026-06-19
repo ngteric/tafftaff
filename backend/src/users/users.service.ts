@@ -25,4 +25,8 @@ export class UsersService {
   create(data: CreateUserData) {
     return this.repository.create(data);
   }
+
+  findByEmail(email: string) {
+    return this.repository.findByEmail(email);
+  }
 }
