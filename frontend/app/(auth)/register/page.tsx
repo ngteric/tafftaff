@@ -2,12 +2,13 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { AuthCard } from "@/src/components/auth-card";
 import { api } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api-error";
+import { isAuthenticated } from "@/src/lib/auth";
 import type { RegisterFormValues } from "@/src/types/auth";
 
 const registerSchema = z.object({
@@ -35,6 +36,12 @@ export default function RegisterPage() {
       password: "",
     },
   });
+
+  useEffect(() => {
+    if (isAuthenticated()) {
+      router.replace("/dashboard");
+    }
+  }, [router]);
 
   const onSubmit = async (values: RegisterFormValues) => {
     setApiError(null);

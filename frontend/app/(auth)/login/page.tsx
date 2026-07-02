@@ -3,13 +3,13 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { AuthCard } from "@/src/components/auth-card";
 import { api } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api-error";
-import { setToken } from "@/src/lib/auth";
+import { isAuthenticated, setToken } from "@/src/lib/auth";
 import type { LoginFormValues, LoginResponse } from "@/src/types/auth";
 
 const loginSchema = z.object({
@@ -32,6 +32,12 @@ export default function LoginPage() {
     },
   });
 
+  useEffect(() => {
+    if (isAuthenticated()) {
+      router.replace("/dashboard");
+    }
+  }, [router]);
+
   const onSubmit = async (values: LoginFormValues) => {
     setApiError(null);
 
@@ -45,7 +51,7 @@ export default function LoginPage() {
       }
 
       setToken(token);
-      router.push("/");
+      router.push("/dashboard");
     } catch (error) {
       setApiError(
         getApiErrorMessage(error, "Connexion impossible pour le moment."),
