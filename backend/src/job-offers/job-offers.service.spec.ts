@@ -126,6 +126,31 @@ describe('JobOffersService', () => {
     expect(result).toEqual(updatedJobOffer);
   });
 
+  it('updates the status of a job offer scoped to the user', async () => {
+    const dto = { status: 'APPLIED' as const };
+    const updatedJobOffer = { ...jobOffer, status: 'APPLIED' };
+    prismaService.jobOffer.findFirst.mockResolvedValue(jobOffer);
+    prismaService.jobOffer.update.mockResolvedValue(updatedJobOffer);
+
+    const result = await service.update('user-id', 'job-id', dto);
+
+    expect(prismaService.jobOffer.update).toHaveBeenCalledWith({
+      where: { id: 'job-id' },
+      data: dto,
+    });
+    expect(result).toEqual(updatedJobOffer);
+  });
+
+  it('does not update a missing or foreign job offer', async () => {
+    prismaService.jobOffer.findFirst.mockResolvedValue(null);
+
+    await expect(
+      service.update('user-id', 'job-id', { status: 'APPLIED' }),
+    ).rejects.toThrow(NotFoundException);
+
+    expect(prismaService.jobOffer.update).not.toHaveBeenCalled();
+  });
+
   it('checks ownership before deleting a job offer', async () => {
     prismaService.jobOffer.findFirst.mockResolvedValue(jobOffer);
     prismaService.jobOffer.delete.mockResolvedValue(jobOffer);
