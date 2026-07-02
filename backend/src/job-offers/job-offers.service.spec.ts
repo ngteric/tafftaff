@@ -77,6 +77,18 @@ describe('JobOffersService', () => {
     expect(result).toEqual([jobOffer]);
   });
 
+  it('returns an empty list when the user has no job offers', async () => {
+    prismaService.jobOffer.findMany.mockResolvedValue([]);
+
+    const result = await service.findAll('user-id');
+
+    expect(prismaService.jobOffer.findMany).toHaveBeenCalledWith({
+      where: { userId: 'user-id' },
+      orderBy: { createdAt: 'desc' },
+    });
+    expect(result).toEqual([]);
+  });
+
   it('finds one job offer scoped to the user', async () => {
     prismaService.jobOffer.findFirst.mockResolvedValue(jobOffer);
 
