@@ -124,7 +124,9 @@ export default function DashboardPage() {
           <dl className="mt-5 space-y-4 text-sm">
             <div className="flex flex-col gap-1 border-b border-neutral-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
               <dt className="font-medium text-neutral-500">Email</dt>
-              <dd className="text-neutral-950">{user?.email ?? "Non renseigne"}</dd>
+              <dd className="text-neutral-950">
+                {user?.email ?? "Non renseigne"}
+              </dd>
             </div>
             <div className="flex flex-col gap-1 border-b border-neutral-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
               <dt className="font-medium text-neutral-500">Prenom</dt>
