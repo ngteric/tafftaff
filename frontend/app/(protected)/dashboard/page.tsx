@@ -9,7 +9,11 @@ import { z } from "zod";
 import { api } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api-error";
 import { getToken, removeToken } from "@/src/lib/auth";
-import { createJobOffer, getJobOffers } from "@/src/lib/job-offers";
+import {
+  createJobOffer,
+  getJobOffers,
+  updateJobOffer,
+} from "@/src/lib/job-offers";
 import type { AuthUser } from "@/src/types/auth";
 import type { JobOffer, JobOfferStatus } from "@/src/types/job-offer";
 
@@ -34,6 +38,14 @@ const statusLabels: Record<JobOfferStatus, string> = {
   REJECTED: "Refusee",
 };
 
+const statusOptions: JobOfferStatus[] = [
+  "SAVED",
+  "APPLIED",
+  "INTERVIEW",
+  "OFFER",
+  "REJECTED",
+];
+
 const formatDate = (date: string) =>
   new Intl.DateTimeFormat("fr-FR", {
     day: "2-digit",
@@ -47,6 +59,12 @@ export default function DashboardPage() {
   const [jobOffers, setJobOffers] = useState<JobOffer[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
+  const [jobOfferActionError, setJobOfferActionError] = useState<string | null>(
+    null,
+  );
+  const [updatingJobOfferId, setUpdatingJobOfferId] = useState<string | null>(
+    null,
+  );
   const [isLoading, setIsLoading] = useState(true);
   const {
     register,
@@ -118,6 +136,7 @@ export default function DashboardPage() {
 
   const onCreateJobOffer = async (values: CreateJobOfferFormValues) => {
     setCreateError(null);
+    setJobOfferActionError(null);
 
     try {
       const jobOffer = await createJobOffer({
@@ -147,6 +166,51 @@ export default function DashboardPage() {
           "Impossible de creer la candidature.",
         ),
       );
+    }
+  };
+
+  const handleStatusChange = async (
+    id: string,
+    status: JobOfferStatus,
+  ) => {
+    const previousJobOffers = jobOffers;
+
+    setJobOfferActionError(null);
+    setUpdatingJobOfferId(id);
+    setJobOffers((currentJobOffers) =>
+      currentJobOffers.map((jobOffer) =>
+        jobOffer.id === id ? { ...jobOffer, status } : jobOffer,
+      ),
+    );
+
+    try {
+      const updatedJobOffer = await updateJobOffer(id, { status });
+
+      setJobOffers((currentJobOffers) =>
+        currentJobOffers.map((jobOffer) =>
+          jobOffer.id === id ? updatedJobOffer : jobOffer,
+        ),
+      );
+    } catch (updateJobOfferError) {
+      if (
+        axios.isAxiosError(updateJobOfferError) &&
+        (updateJobOfferError.response?.status === 401 ||
+          updateJobOfferError.response?.status === 403)
+      ) {
+        removeToken();
+        router.replace("/login");
+        return;
+      }
+
+      setJobOffers(previousJobOffers);
+      setJobOfferActionError(
+        getApiErrorMessage(
+          updateJobOfferError,
+          "Impossible de mettre a jour le statut.",
+        ),
+      );
+    } finally {
+      setUpdatingJobOfferId(null);
     }
   };
 
@@ -221,6 +285,12 @@ export default function DashboardPage() {
               </div>
             </div>
 
+            {jobOfferActionError ? (
+              <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                {jobOfferActionError}
+              </div>
+            ) : null}
+
             {jobOffers.length === 0 ? (
               <div className="rounded-md border border-dashed border-neutral-300 bg-neutral-50 px-4 py-8 text-center">
                 <p className="text-sm font-medium text-neutral-800">
@@ -260,9 +330,26 @@ export default function DashboardPage() {
                         <span>Ajoutee le {formatDate(jobOffer.createdAt)}</span>
                       </div>
                     </div>
-                    <span className="inline-flex h-7 shrink-0 items-center rounded-full bg-teal-50 px-3 text-xs font-semibold text-teal-700">
-                      {statusLabels[jobOffer.status]}
-                    </span>
+                    <label className="flex shrink-0 flex-col gap-1 text-xs font-medium text-neutral-500">
+                      Statut
+                      <select
+                        value={jobOffer.status}
+                        disabled={updatingJobOfferId === jobOffer.id}
+                        onChange={(event) =>
+                          void handleStatusChange(
+                            jobOffer.id,
+                            event.target.value as JobOfferStatus,
+                          )
+                        }
+                        className="h-9 rounded-md border border-neutral-300 bg-white px-2 text-sm font-semibold text-neutral-800 outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20 disabled:cursor-not-allowed disabled:bg-neutral-100"
+                      >
+                        {statusOptions.map((status) => (
+                          <option key={status} value={status}>
+                            {statusLabels[status]}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
                   </article>
                 ))}
               </div>
