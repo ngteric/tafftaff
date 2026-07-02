@@ -10,6 +10,12 @@ import { api } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api-error";
 import { getToken, removeToken } from "@/src/lib/auth";
 import {
+  formatJobOfferDate,
+  jobOfferStatusClasses,
+  jobOfferStatusLabels,
+  jobOfferStatusOptions,
+} from "@/src/lib/job-offer-display";
+import {
   createJobOffer,
   deleteJobOffer,
   getJobOffers,
@@ -30,37 +36,6 @@ const createJobOfferSchema = z.object({
 });
 
 type CreateJobOfferFormValues = z.infer<typeof createJobOfferSchema>;
-
-const statusLabels: Record<JobOfferStatus, string> = {
-  SAVED: "Sauvegardee",
-  APPLIED: "Postulee",
-  INTERVIEW: "Entretien",
-  OFFER: "Offre",
-  REJECTED: "Refusee",
-};
-
-const statusOptions: JobOfferStatus[] = [
-  "SAVED",
-  "APPLIED",
-  "INTERVIEW",
-  "OFFER",
-  "REJECTED",
-];
-
-const statusClasses: Record<JobOfferStatus, string> = {
-  SAVED: "border-neutral-200 bg-neutral-50 text-neutral-600",
-  APPLIED: "border-neutral-300 bg-neutral-100 text-neutral-800",
-  INTERVIEW: "border-orange-200 bg-orange-50 text-orange-700",
-  OFFER: "border-emerald-200 bg-emerald-50 text-emerald-700",
-  REJECTED: "border-red-200 bg-red-50 text-red-700",
-};
-
-const formatDate = (date: string) =>
-  new Intl.DateTimeFormat("fr-FR", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(date));
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -382,7 +357,9 @@ export default function DashboardPage() {
                             Voir le poste
                           </a>
                         ) : null}
-                        <span>Ajoutee le {formatDate(jobOffer.createdAt)}</span>
+                        <span>
+                          Ajoutee le {formatJobOfferDate(jobOffer.createdAt)}
+                        </span>
                       </div>
                     </div>
                     <div className="flex shrink-0 flex-col gap-2">
@@ -400,11 +377,11 @@ export default function DashboardPage() {
                               event.target.value as JobOfferStatus,
                             )
                           }
-                          className={`h-9 rounded-md border px-2 text-sm font-semibold outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20 disabled:cursor-not-allowed disabled:opacity-70 ${statusClasses[jobOffer.status]}`}
+                          className={`h-9 rounded-md border px-2 text-sm font-semibold outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20 disabled:cursor-not-allowed disabled:opacity-70 ${jobOfferStatusClasses[jobOffer.status]}`}
                         >
-                          {statusOptions.map((status) => (
+                          {jobOfferStatusOptions.map((status) => (
                             <option key={status} value={status}>
-                              {statusLabels[status]}
+                              {jobOfferStatusLabels[status]}
                             </option>
                           ))}
                         </select>
