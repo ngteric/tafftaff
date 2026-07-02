@@ -1,11 +1,12 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
+import {
+  CreateJobOfferForm,
+  type CreateJobOfferFormValues,
+} from "@/src/components/create-job-offer-form";
 import { api } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api-error";
 import { getToken, removeToken } from "@/src/lib/auth";
@@ -24,19 +25,6 @@ import {
 import type { AuthUser } from "@/src/types/auth";
 import type { JobOffer, JobOfferStatus } from "@/src/types/job-offer";
 
-const createJobOfferSchema = z.object({
-  title: z.string().min(1, "Le titre est requis"),
-  company: z.string().min(1, "Entreprise requise"),
-  location: z.string(),
-  salary: z.string(),
-  url: z
-    .string()
-    .url("URL invalide")
-    .or(z.literal("")),
-});
-
-type CreateJobOfferFormValues = z.infer<typeof createJobOfferSchema>;
-
 export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -53,21 +41,6 @@ export default function DashboardPage() {
     null,
   );
   const [isLoading, setIsLoading] = useState(true);
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors, isSubmitting },
-  } = useForm<CreateJobOfferFormValues>({
-    resolver: zodResolver(createJobOfferSchema),
-    defaultValues: {
-      title: "",
-      company: "",
-      location: "",
-      salary: "",
-      url: "",
-    },
-  });
 
   useEffect(() => {
     const token = getToken();
@@ -135,7 +108,7 @@ export default function DashboardPage() {
       });
 
       setJobOffers((currentJobOffers) => [jobOffer, ...currentJobOffers]);
-      reset();
+      return true;
     } catch (createJobOfferError) {
       if (
         axios.isAxiosError(createJobOfferError) &&
@@ -144,7 +117,7 @@ export default function DashboardPage() {
       ) {
         removeToken();
         router.replace("/login");
-        return;
+        return false;
       }
 
       setCreateError(
@@ -153,6 +126,7 @@ export default function DashboardPage() {
           "Impossible de creer la candidature.",
         ),
       );
+      return false;
     }
   };
 
@@ -408,114 +382,10 @@ export default function DashboardPage() {
               <h2 className="text-lg font-semibold text-neutral-950">
                 Ajouter une candidature
               </h2>
-              <form
-                onSubmit={handleSubmit(onCreateJobOffer)}
-                className="mt-5 space-y-4"
-              >
-                <div>
-                  <label
-                    htmlFor="title"
-                    className="mb-2 block text-sm font-medium text-neutral-800"
-                  >
-                    Poste
-                  </label>
-                  <input
-                    id="title"
-                    type="text"
-                    className="h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
-                    {...register("title")}
-                  />
-                  {errors.title ? (
-                    <p className="mt-2 text-sm text-red-600">
-                      {errors.title.message}
-                    </p>
-                  ) : null}
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="company"
-                    className="mb-2 block text-sm font-medium text-neutral-800"
-                  >
-                    Entreprise
-                  </label>
-                  <input
-                    id="company"
-                    type="text"
-                    className="h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
-                    {...register("company")}
-                  />
-                  {errors.company ? (
-                    <p className="mt-2 text-sm text-red-600">
-                      {errors.company.message}
-                    </p>
-                  ) : null}
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="location"
-                    className="mb-2 block text-sm font-medium text-neutral-800"
-                  >
-                    Localisation
-                  </label>
-                  <input
-                    id="location"
-                    type="text"
-                    className="h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
-                    {...register("location")}
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="salary"
-                    className="mb-2 block text-sm font-medium text-neutral-800"
-                  >
-                    Salaire
-                  </label>
-                  <input
-                    id="salary"
-                    type="text"
-                    className="h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
-                    {...register("salary")}
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="url"
-                    className="mb-2 block text-sm font-medium text-neutral-800"
-                  >
-                    URL
-                  </label>
-                  <input
-                    id="url"
-                    type="url"
-                    className="h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
-                    {...register("url")}
-                  />
-                  {errors.url ? (
-                    <p className="mt-2 text-sm text-red-600">
-                      {errors.url.message}
-                    </p>
-                  ) : null}
-                </div>
-
-                {createError ? (
-                  <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                    {createError}
-                  </div>
-                ) : null}
-
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="flex h-10 w-full items-center justify-center rounded-md bg-teal-700 px-4 text-sm font-semibold text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-neutral-400"
-                >
-                  {isSubmitting ? "Ajout..." : "Ajouter"}
-                </button>
-              </form>
+              <CreateJobOfferForm
+                error={createError}
+                onSubmit={onCreateJobOffer}
+              />
             </section>
 
             <section className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
