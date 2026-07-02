@@ -1,6 +1,19 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { isAuthenticated } from "@/src/lib/auth";
 
 export default function Home() {
+  const router = useRouter();
+
+  useEffect(() => {
+    if (isAuthenticated()) {
+      router.replace("/dashboard");
+    }
+  }, [router]);
+
   return (
     <main className="min-h-screen bg-[#f6f7f9] px-4 py-8 text-neutral-950">
       <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-5xl flex-col">
