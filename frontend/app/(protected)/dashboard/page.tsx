@@ -1,14 +1,30 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 import { api } from "@/src/lib/api";
 import { getApiErrorMessage } from "@/src/lib/api-error";
 import { getToken, removeToken } from "@/src/lib/auth";
-import { getJobOffers } from "@/src/lib/job-offers";
+import { createJobOffer, getJobOffers } from "@/src/lib/job-offers";
 import type { AuthUser } from "@/src/types/auth";
 import type { JobOffer, JobOfferStatus } from "@/src/types/job-offer";
+
+const createJobOfferSchema = z.object({
+  title: z.string().min(1, "Le titre est requis"),
+  company: z.string().min(1, "Entreprise requise"),
+  location: z.string(),
+  salary: z.string(),
+  url: z
+    .string()
+    .url("URL invalide")
+    .or(z.literal("")),
+});
+
+type CreateJobOfferFormValues = z.infer<typeof createJobOfferSchema>;
 
 const statusLabels: Record<JobOfferStatus, string> = {
   SAVED: "Sauvegardee",
@@ -30,7 +46,23 @@ export default function DashboardPage() {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [jobOffers, setJobOffers] = useState<JobOffer[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [createError, setCreateError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<CreateJobOfferFormValues>({
+    resolver: zodResolver(createJobOfferSchema),
+    defaultValues: {
+      title: "",
+      company: "",
+      location: "",
+      salary: "",
+      url: "",
+    },
+  });
 
   useEffect(() => {
     const token = getToken();
@@ -82,6 +114,40 @@ export default function DashboardPage() {
   const handleLogout = () => {
     removeToken();
     router.replace("/login");
+  };
+
+  const onCreateJobOffer = async (values: CreateJobOfferFormValues) => {
+    setCreateError(null);
+
+    try {
+      const jobOffer = await createJobOffer({
+        title: values.title.trim(),
+        company: values.company.trim(),
+        location: values.location.trim() || undefined,
+        salary: values.salary.trim() || undefined,
+        url: values.url.trim() || undefined,
+      });
+
+      setJobOffers((currentJobOffers) => [jobOffer, ...currentJobOffers]);
+      reset();
+    } catch (createJobOfferError) {
+      if (
+        axios.isAxiosError(createJobOfferError) &&
+        (createJobOfferError.response?.status === 401 ||
+          createJobOfferError.response?.status === 403)
+      ) {
+        removeToken();
+        router.replace("/login");
+        return;
+      }
+
+      setCreateError(
+        getApiErrorMessage(
+          createJobOfferError,
+          "Impossible de creer la candidature.",
+        ),
+      );
+    }
   };
 
   if (isLoading) {
@@ -203,31 +269,147 @@ export default function DashboardPage() {
             )}
           </section>
 
-          <section className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-neutral-950">
-              Utilisateur
-            </h2>
-            <dl className="mt-5 space-y-4 text-sm">
-              <div className="flex flex-col gap-1 border-b border-neutral-100 pb-4">
-                <dt className="font-medium text-neutral-500">Email</dt>
-                <dd className="text-neutral-950">
-                  {user?.email ?? "Non renseigne"}
-                </dd>
-              </div>
-              <div className="flex flex-col gap-1 border-b border-neutral-100 pb-4">
-                <dt className="font-medium text-neutral-500">Prenom</dt>
-                <dd className="text-neutral-950">
-                  {user?.firstName ?? "Non renseigne"}
-                </dd>
-              </div>
-              <div className="flex flex-col gap-1">
-                <dt className="font-medium text-neutral-500">Nom</dt>
-                <dd className="text-neutral-950">
-                  {user?.lastName ?? "Non renseigne"}
-                </dd>
-              </div>
-            </dl>
-          </section>
+          <aside className="space-y-6">
+            <section className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
+              <h2 className="text-lg font-semibold text-neutral-950">
+                Ajouter une candidature
+              </h2>
+              <form
+                onSubmit={handleSubmit(onCreateJobOffer)}
+                className="mt-5 space-y-4"
+              >
+                <div>
+                  <label
+                    htmlFor="title"
+                    className="mb-2 block text-sm font-medium text-neutral-800"
+                  >
+                    Poste
+                  </label>
+                  <input
+                    id="title"
+                    type="text"
+                    className="h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+                    {...register("title")}
+                  />
+                  {errors.title ? (
+                    <p className="mt-2 text-sm text-red-600">
+                      {errors.title.message}
+                    </p>
+                  ) : null}
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="company"
+                    className="mb-2 block text-sm font-medium text-neutral-800"
+                  >
+                    Entreprise
+                  </label>
+                  <input
+                    id="company"
+                    type="text"
+                    className="h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+                    {...register("company")}
+                  />
+                  {errors.company ? (
+                    <p className="mt-2 text-sm text-red-600">
+                      {errors.company.message}
+                    </p>
+                  ) : null}
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="location"
+                    className="mb-2 block text-sm font-medium text-neutral-800"
+                  >
+                    Localisation
+                  </label>
+                  <input
+                    id="location"
+                    type="text"
+                    className="h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+                    {...register("location")}
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="salary"
+                    className="mb-2 block text-sm font-medium text-neutral-800"
+                  >
+                    Salaire
+                  </label>
+                  <input
+                    id="salary"
+                    type="text"
+                    className="h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+                    {...register("salary")}
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="url"
+                    className="mb-2 block text-sm font-medium text-neutral-800"
+                  >
+                    URL
+                  </label>
+                  <input
+                    id="url"
+                    type="url"
+                    className="h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+                    {...register("url")}
+                  />
+                  {errors.url ? (
+                    <p className="mt-2 text-sm text-red-600">
+                      {errors.url.message}
+                    </p>
+                  ) : null}
+                </div>
+
+                {createError ? (
+                  <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                    {createError}
+                  </div>
+                ) : null}
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="flex h-10 w-full items-center justify-center rounded-md bg-teal-700 px-4 text-sm font-semibold text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-neutral-400"
+                >
+                  {isSubmitting ? "Ajout..." : "Ajouter"}
+                </button>
+              </form>
+            </section>
+
+            <section className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
+              <h2 className="text-lg font-semibold text-neutral-950">
+                Utilisateur
+              </h2>
+              <dl className="mt-5 space-y-4 text-sm">
+                <div className="flex flex-col gap-1 border-b border-neutral-100 pb-4">
+                  <dt className="font-medium text-neutral-500">Email</dt>
+                  <dd className="text-neutral-950">
+                    {user?.email ?? "Non renseigne"}
+                  </dd>
+                </div>
+                <div className="flex flex-col gap-1 border-b border-neutral-100 pb-4">
+                  <dt className="font-medium text-neutral-500">Prenom</dt>
+                  <dd className="text-neutral-950">
+                    {user?.firstName ?? "Non renseigne"}
+                  </dd>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <dt className="font-medium text-neutral-500">Nom</dt>
+                  <dd className="text-neutral-950">
+                    {user?.lastName ?? "Non renseigne"}
+                  </dd>
+                </div>
+              </dl>
+            </section>
+          </aside>
         </div>
       </div>
     </main>
