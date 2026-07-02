@@ -1,11 +1,19 @@
 import { JobStatus } from '@prisma/client';
-import { IsEnum, IsOptional, IsString, IsUrl } from 'class-validator';
+import {
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUrl,
+} from 'class-validator';
 
 export class CreateJobOfferDto {
   @IsString()
+  @IsNotEmpty()
   title: string;
 
   @IsString()
+  @IsNotEmpty()
   company: string;
 
   @IsOptional()

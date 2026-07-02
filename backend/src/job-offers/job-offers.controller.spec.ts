@@ -58,7 +58,9 @@ describe('JobOffersController', () => {
   });
 
   it('is protected by JwtAuthGuard', () => {
-    const guards = Reflect.getMetadata(GUARDS_METADATA, JobOffersController);
+    const guards = Reflect.getMetadata(GUARDS_METADATA, JobOffersController) as
+      | unknown[]
+      | undefined;
 
     expect(guards).toContain(JwtAuthGuard);
   });

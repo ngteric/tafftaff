@@ -45,6 +45,8 @@ export class AuthService {
     }
 
     const { password, ...userWithoutPassword } = user;
+    void password;
+
     const accessToken = await this.jwtService.signAsync({
       sub: user.id,
       email: user.email,
