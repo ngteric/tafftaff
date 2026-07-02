@@ -1,2 +1,2 @@
 -- DropIndex
-DROP INDEX "JobOffer_userId_idx";
+DROP INDEX IF EXISTS "JobOffer_userId_idx";
