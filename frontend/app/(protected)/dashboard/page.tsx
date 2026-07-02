@@ -46,6 +46,14 @@ const statusOptions: JobOfferStatus[] = [
   "REJECTED",
 ];
 
+const statusClasses: Record<JobOfferStatus, string> = {
+  SAVED: "border-neutral-200 bg-neutral-50 text-neutral-600",
+  APPLIED: "border-neutral-300 bg-neutral-100 text-neutral-800",
+  INTERVIEW: "border-orange-200 bg-orange-50 text-orange-700",
+  OFFER: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  REJECTED: "border-red-200 bg-red-50 text-red-700",
+};
+
 const formatDate = (date: string) =>
   new Intl.DateTimeFormat("fr-FR", {
     day: "2-digit",
@@ -341,7 +349,7 @@ export default function DashboardPage() {
                             event.target.value as JobOfferStatus,
                           )
                         }
-                        className="h-9 rounded-md border border-neutral-300 bg-white px-2 text-sm font-semibold text-neutral-800 outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20 disabled:cursor-not-allowed disabled:bg-neutral-100"
+                        className={`h-9 rounded-md border px-2 text-sm font-semibold outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20 disabled:cursor-not-allowed disabled:opacity-70 ${statusClasses[jobOffer.status]}`}
                       >
                         {statusOptions.map((status) => (
                           <option key={status} value={status}>
