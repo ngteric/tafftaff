@@ -165,4 +165,14 @@ describe('JobOffersService', () => {
     });
     expect(result).toBeUndefined();
   });
+
+  it('does not delete a missing or foreign job offer', async () => {
+    prismaService.jobOffer.findFirst.mockResolvedValue(null);
+
+    await expect(service.remove('user-id', 'job-id')).rejects.toThrow(
+      NotFoundException,
+    );
+
+    expect(prismaService.jobOffer.delete).not.toHaveBeenCalled();
+  });
 });
