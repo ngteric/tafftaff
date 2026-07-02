@@ -11,6 +11,7 @@ import { getApiErrorMessage } from "@/src/lib/api-error";
 import { getToken, removeToken } from "@/src/lib/auth";
 import {
   createJobOffer,
+  deleteJobOffer,
   getJobOffers,
   updateJobOffer,
 } from "@/src/lib/job-offers";
@@ -71,6 +72,9 @@ export default function DashboardPage() {
     null,
   );
   const [updatingJobOfferId, setUpdatingJobOfferId] = useState<string | null>(
+    null,
+  );
+  const [deletingJobOfferId, setDeletingJobOfferId] = useState<string | null>(
     null,
   );
   const [isLoading, setIsLoading] = useState(true);
@@ -222,6 +226,40 @@ export default function DashboardPage() {
     }
   };
 
+  const handleDeleteJobOffer = async (id: string) => {
+    const previousJobOffers = jobOffers;
+
+    setJobOfferActionError(null);
+    setDeletingJobOfferId(id);
+    setJobOffers((currentJobOffers) =>
+      currentJobOffers.filter((jobOffer) => jobOffer.id !== id),
+    );
+
+    try {
+      await deleteJobOffer(id);
+    } catch (deleteJobOfferError) {
+      if (
+        axios.isAxiosError(deleteJobOfferError) &&
+        (deleteJobOfferError.response?.status === 401 ||
+          deleteJobOfferError.response?.status === 403)
+      ) {
+        removeToken();
+        router.replace("/login");
+        return;
+      }
+
+      setJobOffers(previousJobOffers);
+      setJobOfferActionError(
+        getApiErrorMessage(
+          deleteJobOfferError,
+          "Impossible de supprimer la candidature.",
+        ),
+      );
+    } finally {
+      setDeletingJobOfferId(null);
+    }
+  };
+
   if (isLoading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#f6f7f9] px-4 text-neutral-950">
@@ -338,26 +376,41 @@ export default function DashboardPage() {
                         <span>Ajoutee le {formatDate(jobOffer.createdAt)}</span>
                       </div>
                     </div>
-                    <label className="flex shrink-0 flex-col gap-1 text-xs font-medium text-neutral-500">
-                      Statut
-                      <select
-                        value={jobOffer.status}
-                        disabled={updatingJobOfferId === jobOffer.id}
-                        onChange={(event) =>
-                          void handleStatusChange(
-                            jobOffer.id,
-                            event.target.value as JobOfferStatus,
-                          )
-                        }
-                        className={`h-9 rounded-md border px-2 text-sm font-semibold outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20 disabled:cursor-not-allowed disabled:opacity-70 ${statusClasses[jobOffer.status]}`}
+                    <div className="flex shrink-0 flex-col gap-2">
+                      <label className="flex flex-col gap-1 text-xs font-medium text-neutral-500">
+                        Statut
+                        <select
+                          value={jobOffer.status}
+                          disabled={
+                            updatingJobOfferId === jobOffer.id ||
+                            deletingJobOfferId === jobOffer.id
+                          }
+                          onChange={(event) =>
+                            void handleStatusChange(
+                              jobOffer.id,
+                              event.target.value as JobOfferStatus,
+                            )
+                          }
+                          className={`h-9 rounded-md border px-2 text-sm font-semibold outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20 disabled:cursor-not-allowed disabled:opacity-70 ${statusClasses[jobOffer.status]}`}
+                        >
+                          {statusOptions.map((status) => (
+                            <option key={status} value={status}>
+                              {statusLabels[status]}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <button
+                        type="button"
+                        disabled={deletingJobOfferId === jobOffer.id}
+                        onClick={() => void handleDeleteJobOffer(jobOffer.id)}
+                        className="h-9 rounded-md border border-red-200 bg-white px-3 text-sm font-semibold text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:bg-neutral-100 disabled:text-neutral-400"
                       >
-                        {statusOptions.map((status) => (
-                          <option key={status} value={status}>
-                            {statusLabels[status]}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
+                        {deletingJobOfferId === jobOffer.id
+                          ? "Suppression..."
+                          : "Supprimer"}
+                      </button>
+                    </div>
                   </article>
                 ))}
               </div>
