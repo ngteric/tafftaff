@@ -226,7 +226,16 @@ export default function DashboardPage() {
     }
   };
 
-  const handleDeleteJobOffer = async (id: string) => {
+  const handleDeleteJobOffer = async (jobOffer: JobOffer) => {
+    const shouldDelete = window.confirm(
+      `Supprimer la candidature "${jobOffer.title}" chez ${jobOffer.company} ?`,
+    );
+
+    if (!shouldDelete) {
+      return;
+    }
+
+    const { id } = jobOffer;
     const previousJobOffers = jobOffers;
 
     setJobOfferActionError(null);
@@ -403,7 +412,7 @@ export default function DashboardPage() {
                       <button
                         type="button"
                         disabled={deletingJobOfferId === jobOffer.id}
-                        onClick={() => void handleDeleteJobOffer(jobOffer.id)}
+                        onClick={() => void handleDeleteJobOffer(jobOffer)}
                         className="h-9 rounded-md border border-red-200 bg-white px-3 text-sm font-semibold text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:bg-neutral-100 disabled:text-neutral-400"
                       >
                         {deletingJobOfferId === jobOffer.id
